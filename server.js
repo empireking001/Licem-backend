@@ -1,0 +1,49 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const path = require('path');
+require('dotenv').config();
+
+const app = express();
+
+// ── Middleware ──────────────────────────────────────────────────────────────
+app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files as static
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ── Routes ──────────────────────────────────────────────────────────────────
+app.use('/api/auth',      require('./routes/auth'));
+app.use('/api/sermons',   require('./routes/sermons'));
+app.use('/api/events',    require('./routes/events'));
+app.use('/api/posts',     require('./routes/posts'));
+app.use('/api/comments',  require('./routes/comments'));
+app.use('/api/donations', require('./routes/donations'));
+app.use('/api/users',     require('./routes/users'));
+app.use('/api/gallery',   require('./routes/gallery'));
+app.use('/api/settings',  require('./routes/settings'));
+app.use('/api/prayers',   require('./routes/prayers'));
+app.use("/api/announcements", require("./routes/announcements"));
+app.use("/api/testimonies", require("./routes/testimonies"));
+app.use("/api/connect", require("./routes/connect"));
+app.use('/api/media',     require('./routes/media'));
+
+// ── Health check ────────────────────────────────────────────────────────────
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'GraceLife API is running ✅', time: new Date() });
+});
+
+// ── MongoDB connection ───────────────────────────────────────────────────────
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log('✅ MongoDB connected');
+    app.listen(process.env.PORT || 5000, () => {
+      console.log(`🚀 Server running on http://localhost:${process.env.PORT || 5000}`);
+    });
+  })
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err.message);
+    process.exit(1);
+  });

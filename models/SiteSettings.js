@@ -1,0 +1,55 @@
+const mongoose = require("mongoose");
+
+const settingsSchema = new mongoose.Schema(
+  {
+    siteName: {
+      type: String,
+      default: "Living Christ Evangelical Ministries",
+    },
+    tagline: { type: String, default: "Soul Winning — Jesus is Lord" },
+    email: { type: String, default: "hello@tlcem.org" },
+    phone: { type: String, default: "+234 801 234 5678" },
+    address: {
+      type: String,
+      default: "14 Grace Avenue, Victoria Island, Lagos",
+    },
+    facebook: { type: String, default: "" },
+    youtube: { type: String, default: "" },
+    instagram: { type: String, default: "" },
+    twitter: { type: String, default: "" },
+    liveStreamUrl: { type: String, default: "" },
+    liveIsActive: { type: Boolean, default: false },
+    logoUrl: { type: String, default: "" },
+    heroImageUrl: { type: String, default: "" },
+    faviconUrl: { type: String, default: "" },
+    faviconEmoji: { type: String, default: "✝️" },
+    faviconType: {
+      type: String,
+      enum: ["emoji", "url", "text"],
+      default: "emoji",
+    },
+    primaryColor: { type: String, default: "#1B4332" },
+    accentColor: { type: String, default: "#C9953A" },
+    metaTitle: {
+      type: String,
+      default: "Licem Church | Where Faith Meets Community",
+    },
+    metaDesc: { type: String, default: "" },
+    metaKeywords: { type: String, default: "" },
+    googleAnalytics: { type: String, default: "" },
+    paymentProvider: { type: String, default: "Paystack" },
+    paymentKey: { type: String, default: "" },
+    allowComments: { type: Boolean, default: true },
+    requireApproval: { type: Boolean, default: true },
+    maintenanceMode: { type: Boolean, default: false },
+    footerAddress: { type: String, default: "" },
+    footerEmail: { type: String, default: "" },
+    footerPhone: { type: String, default: "" },
+    sundayTimes: { type: String, default: "Every Sunday — 9:00 AM & 11:00 AM" },
+    midweekTime: { type: String, default: "Every Wednesday — 6:30 PM" },
+    prayerTime: { type: String, default: "Every Friday — 6:00 AM" },
+    whatsappNumber: { type: String, default: "" },
+  },
+  { timestamps: true },
+);
+module.exports = mongoose.model("SiteSettings", settingsSchema);
