@@ -9,8 +9,20 @@ const app = express();
 // ── Middleware ──────────────────────────────────────────────────────────────
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://licem-frontend.vercel.app/"],
+    origin: function (origin, callback) {
+      const allowed = [
+        "http://localhost:3000",
+        "https://licem-frontend.vercel.app",
+      ];
+      if (!origin || allowed.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 app.use(express.json());
