@@ -64,3 +64,31 @@ mongoose.connect(process.env.MONGODB_URI)
     console.error('❌ MongoDB connection error:', err.message);
     process.exit(1);
   });
+  // TEMPORARY SEED LOGIC - Delete after one successful run
+const seedAdminOnStartup = async () => {
+  try {
+    const { User } = require('./models/User'); // Ensure this path matches your file structure
+    const adminEmail = 'pastor@gracelife.org';
+    
+    const existingAdmin = await User.findOne({ email: adminEmail });
+    if (!existingAdmin) {
+      await User.create({
+        name: 'Head Pastor',
+        email: adminEmail,
+        password: 'admin123', // Your pre-save hook will hash this
+        role: 'admin',
+        isActive: true
+      });
+      console.log('✅ SEED: Super Admin created successfully');
+    } else {
+      console.log('ℹ️ SEED: Admin already exists, skipping...');
+    }
+  } catch (err) {
+    console.error('❌ SEED ERROR:', err);
+  }
+};
+
+// Call it after the connection is established
+mongoose.connection.once('open', () => {
+  seedAdminOnStartup();
+});
