@@ -46,6 +46,7 @@ app.use("/api/announcements", require("./routes/announcements"));
 app.use("/api/testimonies", require("./routes/testimonies"));
 app.use("/api/connect", require("./routes/connect"));
 app.use('/api/media',     require('./routes/media'));
+app.use("/api/birthdays", require("./routes/birthdays"));
 
 // ── Health check ────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

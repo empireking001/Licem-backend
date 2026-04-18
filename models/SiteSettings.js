@@ -49,6 +49,13 @@ const settingsSchema = new mongoose.Schema(
     midweekTime: { type: String, default: "Every Wednesday — 6:30 PM" },
     prayerTime: { type: String, default: "Every Friday — 6:00 AM" },
     whatsappNumber: { type: String, default: "" },
+    radioStreamUrl: { type: String, default: "" },
+    radioName: { type: String, default: "LICEM Radio" },
+    radioIsLive: { type: Boolean, default: false },
+    faceOfWeekName: { type: String, default: "" },
+    faceOfWeekTitle: { type: String, default: "" },
+    faceOfWeekImage: { type: String, default: "" },
+    faceOfWeekQuote: { type: String, default: "" },
   },
   { timestamps: true },
 );
