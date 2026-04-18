@@ -68,7 +68,7 @@ mongoose.connect(process.env.MONGODB_URI)
   // TEMPORARY SEED LOGIC - Delete after one successful run
 const seedAdminOnStartup = async () => {
   try {
-    const { User } = require('./models/User'); // Ensure this path matches your file structure
+    const User = require("./models/User"); // Ensure this path matches your file structure
     const adminEmail = 'pastor@gracelife.org';
     
     const existingAdmin = await User.findOne({ email: adminEmail });
