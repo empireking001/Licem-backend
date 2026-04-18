@@ -10,6 +10,8 @@ const connectSchema = new mongoose.Schema(
     gender: { type: String },
     ageGroup: { type: String },
     maritalStatus: { type: String },
+    birthday: { type: Number },
+    birthMonth: { type: Number },
     visitType: { type: String, default: "First Time" },
     howHeard: { type: String },
     interests: [{ type: String }],
