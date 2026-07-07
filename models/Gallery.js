@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const galleryImageSchema = new mongoose.Schema({
   url:       { type: String, required: true },
   filename:  { type: String, default: '' },
+  publicId:  { type: String, default: '' },
   caption:   { type: String, default: '' },
   size:      { type: Number, default: 0 },
   uploadedAt:{ type: Date, default: Date.now }

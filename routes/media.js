@@ -1,54 +1,89 @@
-const router = require('express').Router();
-const path = require('path');
-const fs = require('fs');
-const { protect, adminOnly } = require('../middleware/auth');
-const upload = require('../middleware/upload');
+const router = require("express").Router();
+const Media = require("../models/Media");
+const { protect, adminOnly } = require("../middleware/auth");
+const upload = require("../middleware/upload");
+const { getFileUrl, deleteStoredFile } = require("../middleware/upload");
 
-// Helper: set upload folder
+// Helper: set upload folder (simple name — resolved by the upload middleware)
 const mediaUpload = (req, res, next) => {
-  req.uploadFolder = path.join(__dirname, '../uploads/media');
+  req.uploadFolder = "media";
   next();
 };
 
-// GET /api/media  - list all uploaded media files
-router.get('/', protect, adminOnly, async (req, res) => {
+// GET /api/media - list all uploaded media files (from DB, works with Cloudinary)
+router.get("/", protect, adminOnly, async (req, res) => {
   try {
-    const mediaDir = path.join(__dirname, '../uploads/media');
-    if (!fs.existsSync(mediaDir)) return res.json([]);
-    const files = fs.readdirSync(mediaDir).map(filename => {
-      const stat = fs.statSync(path.join(mediaDir, filename));
-      return {
-        filename,
-        url: `/uploads/media/${filename}`,
-        size: stat.size,
-        uploadedAt: stat.birthtime
-      };
-    });
-    res.json(files.reverse());
-  } catch (err) { res.status(500).json({ message: err.message }); }
+    const files = await Media.find().sort({ createdAt: -1 });
+    res.json(
+      files.map((f) => ({
+        _id: f._id,
+        filename: f.filename,
+        originalName: f.originalName,
+        url: f.url,
+        size: f.size,
+        mimetype: f.mimetype,
+        uploadedAt: f.createdAt,
+      })),
+    );
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 // POST /api/media/upload
-router.post('/upload', protect, adminOnly, mediaUpload, upload.array('files', 20), (req, res) => {
-  try {
-    const uploaded = req.files.map(f => ({
-      filename: f.filename,
-      originalName: f.originalname,
-      url: `/uploads/media/${f.filename}`,
-      size: f.size,
-      mimetype: f.mimetype
-    }));
-    res.json({ message: `${uploaded.length} file(s) uploaded`, files: uploaded });
-  } catch (err) { res.status(500).json({ message: err.message }); }
-});
+router.post(
+  "/upload",
+  protect,
+  adminOnly,
+  mediaUpload,
+  upload.array("files", 20),
+  async (req, res) => {
+    try {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: "No files uploaded" });
+      }
+      const docs = await Media.insertMany(
+        req.files.map((f) => ({
+          filename: f.filename,
+          originalName: f.originalname,
+          url: getFileUrl(f),
+          size: f.size,
+          mimetype: f.mimetype,
+          uploadedBy: req.user._id,
+        })),
+      );
+      res.json({
+        message: `${docs.length} file(s) uploaded`,
+        files: docs,
+      });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  },
+);
 
-// DELETE /api/media/:filename
-router.delete('/:filename', protect, adminOnly, (req, res) => {
+// DELETE /api/media/:id  (falls back to filename lookup for old entries)
+router.delete("/:id", protect, adminOnly, async (req, res) => {
   try {
-    const filePath = path.join(__dirname, '../uploads/media', req.params.filename);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    res.json({ message: 'File deleted' });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+    const { id } = req.params;
+    let doc = null;
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      doc = await Media.findById(id);
+    }
+    if (!doc) {
+      doc = await Media.findOne({ filename: id });
+    }
+    if (doc) {
+      await deleteStoredFile(doc.url, doc.filename);
+      await doc.deleteOne();
+    } else {
+      // Legacy local file with no DB record
+      await deleteStoredFile(`/uploads/media/${id}`, null);
+    }
+    res.json({ message: "File deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 module.exports = router;
