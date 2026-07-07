@@ -45,12 +45,13 @@ app.use('/api/prayers',   require('./routes/prayers'));
 app.use("/api/announcements", require("./routes/announcements"));
 app.use("/api/testimonies", require("./routes/testimonies"));
 app.use("/api/connect", require("./routes/connect"));
+app.use("/api/contact", require("./routes/contact"));
 app.use('/api/media',     require('./routes/media'));
 app.use("/api/birthdays", require("./routes/birthdays"));
 
 // ── Health check ────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'GraceLife API is running ✅', time: new Date() });
+  res.json({ status: 'Licem API is running ✅', time: new Date() });
 });
 
 // ── MongoDB connection ───────────────────────────────────────────────────────
