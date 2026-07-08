@@ -1,13 +1,12 @@
 const router = require('express').Router();
-const path = require('path');
-const fs = require('fs');
 const Gallery = require('../models/Gallery');
 const { protect, adminOnly } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const { getFileUrl, deleteStoredFile } = require('../middleware/upload');
 
-// Helper: set upload folder for gallery images
+// Helper: set upload folder for gallery images (simple name — resolved by upload middleware)
 const galleryUpload = (req, res, next) => {
-  req.uploadFolder = path.join(__dirname, '../uploads/gallery');
+  req.uploadFolder = 'gallery';
   next();
 };
 
@@ -71,8 +70,9 @@ router.post('/:id/images', protect, adminOnly, galleryUpload, upload.array('imag
     const album = await Gallery.findById(req.params.id);
     if (!album) return res.status(404).json({ message: 'Album not found' });
     const newImages = req.files.map(f => ({
-      url: `/uploads/gallery/${f.filename}`,
+      url: getFileUrl(f),
       filename: f.originalname,
+      publicId: f.filename,
       caption: '',
       size: f.size
     }));
@@ -102,12 +102,12 @@ router.delete('/:albumId/images/:imageId', protect, adminOnly, async (req, res) 
     const album = await Gallery.findById(req.params.albumId);
     const img = album.images.id(req.params.imageId);
     if (!img) return res.status(404).json({ message: 'Image not found' });
-    // Remove file from disk
-    const filePath = path.join(__dirname, '..', img.url);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    const deletedUrl = img.url;
+    // Remove the stored file (Cloudinary asset or local disk file)
+    await deleteStoredFile(img.url, img.publicId);
     img.deleteOne();
     // Reset cover if deleted
-    if (album.coverImage === img.url) {
+    if (album.coverImage === deletedUrl) {
       album.coverImage = album.images[0]?.url || '';
     }
     await album.save();
@@ -120,11 +120,10 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
   try {
     const album = await Gallery.findById(req.params.id);
     if (!album) return res.status(404).json({ message: 'Album not found' });
-    // Delete all files from disk
-    album.images.forEach(img => {
-      const filePath = path.join(__dirname, '..', img.url);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    });
+    // Delete all stored files (Cloudinary assets or local disk files)
+    for (const img of album.images) {
+      await deleteStoredFile(img.url, img.publicId);
+    }
     await album.deleteOne();
     res.json({ message: 'Album deleted' });
   } catch (err) { res.status(500).json({ message: err.message }); }

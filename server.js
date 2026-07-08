@@ -1,8 +1,9 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '.env.development.local') });
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
 
 const app = express();
 
@@ -78,10 +79,17 @@ const seedAdminOnStartup = async () => {
         name: 'Head Pastor',
         email: adminEmail,
         password: 'admin123', // Your pre-save hook will hash this
-        role: 'admin',
-        isActive: true
+        role: 'Super Admin',
+        status: 'Active'
       });
       console.log('✅ SEED: Super Admin created successfully');
+    } else if (!['Super Admin', 'Editor', 'Moderator'].includes(existingAdmin.role)) {
+      // Repair legacy accounts saved with an invalid role (e.g. 'admin')
+      await User.updateOne(
+        { _id: existingAdmin._id },
+        { $set: { role: 'Super Admin', status: 'Active' } }
+      );
+      console.log('✅ SEED: Existing admin role repaired to Super Admin');
     } else {
       console.log('ℹ️ SEED: Admin already exists, skipping...');
     }

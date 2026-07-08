@@ -1,10 +1,10 @@
 const mongoose = require("mongoose");
-const User = require("./models/User"); // Adjust path to your model file
+const User = require("./User"); // This file lives inside models/
 require("dotenv").config();
 
 const seedAdmin = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI);
 
     // Check if the admin already exists to avoid duplicates
     const adminExists = await User.findOne({ email: "pastor@gracelife.org" });
