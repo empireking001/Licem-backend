@@ -21,12 +21,22 @@ async function seed() {
     SiteSettings.deleteMany()
   ]);
 
-  // Users
+  // Users: credentials must be supplied explicitly for each seed run.
+  const requiredSeedCredentials = [
+    ['ADMIN_BOOTSTRAP_EMAIL', 'ADMIN_BOOTSTRAP_PASSWORD'],
+    ['EDITOR_ONE_EMAIL', 'EDITOR_ONE_PASSWORD'],
+    ['EDITOR_TWO_EMAIL', 'EDITOR_TWO_PASSWORD'],
+    ['MODERATOR_EMAIL', 'MODERATOR_PASSWORD'],
+  ];
+  const missingSeedCredentials = requiredSeedCredentials.flat().filter((key) => !process.env[key]);
+  if (missingSeedCredentials.length) {
+    throw new Error(`Missing seed credentials: ${missingSeedCredentials.join(', ')}`);
+  }
   const users = await User.insertMany([
-    { name: 'Pastor James Adeyemi', email: 'pastor@gracelife.org', password: await bcrypt.hash('admin123', 10), role: 'Super Admin', status: 'Active' },
-    { name: 'Pastor Grace Okonkwo', email: 'grace@gracelife.org', password: await bcrypt.hash('editor123', 10), role: 'Editor', status: 'Active' },
-    { name: 'Min. David Fashola', email: 'david@gracelife.org', password: await bcrypt.hash('editor123', 10), role: 'Editor', status: 'Active' },
-    { name: 'Sarah Eze', email: 'sarah@gracelife.org', password: await bcrypt.hash('mod123', 10), role: 'Moderator', status: 'Active' },
+    { name: process.env.ADMIN_BOOTSTRAP_NAME || 'LICEM Administrator', email: process.env.ADMIN_BOOTSTRAP_EMAIL, password: await bcrypt.hash(process.env.ADMIN_BOOTSTRAP_PASSWORD, 10), role: 'Super Admin', status: 'Active' },
+    { name: 'LICEM Editor One', email: process.env.EDITOR_ONE_EMAIL, password: await bcrypt.hash(process.env.EDITOR_ONE_PASSWORD, 10), role: 'Editor', status: 'Active' },
+    { name: 'LICEM Editor Two', email: process.env.EDITOR_TWO_EMAIL, password: await bcrypt.hash(process.env.EDITOR_TWO_PASSWORD, 10), role: 'Editor', status: 'Active' },
+    { name: 'LICEM Moderator', email: process.env.MODERATOR_EMAIL, password: await bcrypt.hash(process.env.MODERATOR_PASSWORD, 10), role: 'Moderator', status: 'Active' },
   ]);
   console.log('✅ Users seeded');
 
@@ -102,8 +112,7 @@ async function seed() {
 
   console.log('\n🎉 Database seeded successfully!');
   console.log('─────────────────────────────────────');
-  console.log('Admin login:  pastor@gracelife.org');
-  console.log('Password:     admin123');
+  console.log('Admin credentials supplied through environment variables.');
   console.log('─────────────────────────────────────');
   await mongoose.disconnect();
   process.exit(0);

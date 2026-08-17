@@ -6,14 +6,18 @@ const seedAdmin = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI);
 
-    // Check if the admin already exists to avoid duplicates
-    const adminExists = await User.findOne({ email: "pastor@gracelife.org" });
+    const email = process.env.ADMIN_BOOTSTRAP_EMAIL;
+    const password = process.env.ADMIN_BOOTSTRAP_PASSWORD;
+    if (!email || !password) throw new Error('Set ADMIN_BOOTSTRAP_EMAIL and ADMIN_BOOTSTRAP_PASSWORD before seeding');
+
+    // Check if the explicitly configured admin already exists to avoid duplicates
+    const adminExists = await User.findOne({ email });
 
     if (!adminExists) {
       await User.create({
-        name: "Head Pastor",
-        email: "pastor@gracelife.org",
-        password: "admin123", // Mongoose hook will hash this automatically
+        name: process.env.ADMIN_BOOTSTRAP_NAME || "LICEM Administrator",
+        email,
+        password,
         role: "Super Admin",
         status: "Active",
       });

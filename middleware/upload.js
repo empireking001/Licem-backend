@@ -85,6 +85,7 @@ const processFiles = async (req, res, next) => {
         f.filename = result.public_id;
         f.path = result.secure_url;
         f.size = result.bytes || f.size;
+        f.resourceType = result.resource_type || 'auto';
       }
     } else {
       for (const f of files) {
@@ -113,11 +114,11 @@ const getFileUrl = (f) =>
   f.path && String(f.path).startsWith("http") ? f.path : f.path || "";
 
 // Delete a stored file (Cloudinary asset or local disk file)
-const deleteStoredFile = async (url, publicId) => {
+const deleteStoredFile = async (url, publicId, resourceType = 'image') => {
   try {
     if (url && String(url).startsWith("http")) {
       if (useCloudinary && publicId) {
-        await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+        await cloudinary.uploader.destroy(publicId, { resource_type: resourceType || "image" });
       }
       return;
     }

@@ -6,6 +6,7 @@ const galleryImageSchema = new mongoose.Schema({
   publicId:  { type: String, default: '' },
   caption:   { type: String, default: '' },
   size:      { type: Number, default: 0 },
+  resourceType: { type: String, default: 'image' },
   uploadedAt:{ type: Date, default: Date.now }
 });
 

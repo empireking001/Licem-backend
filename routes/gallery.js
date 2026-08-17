@@ -10,6 +10,50 @@ const galleryUpload = (req, res, next) => {
   next();
 };
 
+const safeDownloadName = (name = 'photo') => {
+  const cleaned = String(name).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120);
+  return cleaned || 'photo';
+};
+
+// PUBLIC: Download a known gallery asset by database identifiers only.
+// The endpoint never accepts or fetches a caller-provided URL.
+router.get('/download/:albumId/:imageId', async (req, res) => {
+  try {
+    const album = await Gallery.findOne({ _id: req.params.albumId, published: true }).select('images');
+    const image = album?.images?.id(req.params.imageId);
+    if (!image) return res.status(404).json({ message: 'Image not found' });
+
+    const source = String(image.url || '');
+    const parsed = new URL(source);
+    if (parsed.protocol !== 'https:' || parsed.hostname !== 'res.cloudinary.com') {
+      return res.status(400).json({ message: 'Unsupported media source' });
+    }
+
+    const upstream = await fetch(parsed, { redirect: 'error' });
+    if (!upstream.ok || !upstream.body) {
+      return res.status(502).json({ message: 'Media asset is unavailable' });
+    }
+
+    res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/octet-stream');
+    const contentLength = upstream.headers.get('content-length');
+    if (contentLength) res.setHeader('Content-Length', contentLength);
+    res.setHeader('Content-Disposition', `attachment; filename="${safeDownloadName(image.filename || 'photo.jpg')}"`);
+    const reader = upstream.body.getReader();
+    const pump = async () => {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (!res.write(Buffer.from(value))) await new Promise(resolve => res.once('drain', resolve));
+      }
+      res.end();
+    };
+    await pump();
+  } catch (err) {
+    if (!res.headersSent) res.status(500).json({ message: 'Download failed' });
+    else res.end();
+  }
+});
+
 // PUBLIC: Get all published albums (grouped)
 router.get('/', async (req, res) => {
   try {
@@ -74,7 +118,8 @@ router.post('/:id/images', protect, adminOnly, galleryUpload, upload.array('imag
       filename: f.originalname,
       publicId: f.filename,
       caption: '',
-      size: f.size
+      size: f.size,
+      resourceType: f.resourceType || 'image'
     }));
     album.images.push(...newImages);
     if (!album.coverImage && newImages.length > 0) album.coverImage = newImages[0].url;
@@ -104,7 +149,7 @@ router.delete('/:albumId/images/:imageId', protect, adminOnly, async (req, res) 
     if (!img) return res.status(404).json({ message: 'Image not found' });
     const deletedUrl = img.url;
     // Remove the stored file (Cloudinary asset or local disk file)
-    await deleteStoredFile(img.url, img.publicId);
+    await deleteStoredFile(img.url, img.publicId, img.resourceType);
     img.deleteOne();
     // Reset cover if deleted
     if (album.coverImage === deletedUrl) {
@@ -122,7 +167,7 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
     if (!album) return res.status(404).json({ message: 'Album not found' });
     // Delete all stored files (Cloudinary assets or local disk files)
     for (const img of album.images) {
-      await deleteStoredFile(img.url, img.publicId);
+      await deleteStoredFile(img.url, img.publicId, img.resourceType);
     }
     await album.deleteOne();
     res.json({ message: 'Album deleted' });

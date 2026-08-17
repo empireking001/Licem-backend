@@ -7,6 +7,7 @@ const mediaSchema = new mongoose.Schema(
     url: { type: String, required: true },
     size: { type: Number, default: 0 },
     mimetype: { type: String, default: "" },
+    resourceType: { type: String, default: "auto" },
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true },

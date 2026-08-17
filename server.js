@@ -7,15 +7,26 @@ const path = require('path');
 
 const app = express();
 
+const allowedOrigins = (process.env.CORS_ORIGINS ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://licem-frontend.vercel.app'
+    : 'http://localhost:3000,https://licem-frontend.vercel.app'))
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 // ── Middleware ──────────────────────────────────────────────────────────────
+app.disable('x-powered-by');
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 app.use(
   cors({
     origin: function (origin, callback) {
-      const allowed = [
-        "http://localhost:3000",
-        "https://licem-frontend.vercel.app",
-      ];
-      if (!origin || allowed.indexOf(origin) !== -1) {
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -28,6 +39,12 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+if (process.env.NODE_ENV === 'production' &&
+    (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET)) {
+  console.error('❌ Cloudinary configuration is required in production.');
+  process.exit(1);
+}
 
 // Serve uploaded files as static
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -69,29 +86,32 @@ mongoose.connect(process.env.MONGODB_URI)
   });
   // TEMPORARY SEED LOGIC - Delete after one successful run
 const seedAdminOnStartup = async () => {
+  if (process.env.ENABLE_ADMIN_BOOTSTRAP !== 'true') {
+    console.log('ℹ️ Admin bootstrap disabled.');
+    return;
+  }
+
+  const adminEmail = process.env.ADMIN_BOOTSTRAP_EMAIL;
+  const adminPassword = process.env.ADMIN_BOOTSTRAP_PASSWORD;
+  if (!adminEmail || !adminPassword) {
+    console.error('❌ ADMIN_BOOTSTRAP_EMAIL and ADMIN_BOOTSTRAP_PASSWORD are required when ENABLE_ADMIN_BOOTSTRAP=true');
+    return;
+  }
+
   try {
-    const User = require("./models/User"); // Ensure this path matches your file structure
-    const adminEmail = 'pastor@gracelife.org';
-    
+    const User = require('./models/User');
     const existingAdmin = await User.findOne({ email: adminEmail });
     if (!existingAdmin) {
       await User.create({
-        name: 'Head Pastor',
+        name: process.env.ADMIN_BOOTSTRAP_NAME || 'LICEM Administrator',
         email: adminEmail,
-        password: 'admin123', // Your pre-save hook will hash this
+        password: adminPassword,
         role: 'Super Admin',
-        status: 'Active'
+        status: 'Active',
       });
-      console.log('✅ SEED: Super Admin created successfully');
-    } else if (!['Super Admin', 'Editor', 'Moderator'].includes(existingAdmin.role)) {
-      // Repair legacy accounts saved with an invalid role (e.g. 'admin')
-      await User.updateOne(
-        { _id: existingAdmin._id },
-        { $set: { role: 'Super Admin', status: 'Active' } }
-      );
-      console.log('✅ SEED: Existing admin role repaired to Super Admin');
+      console.log('✅ SEED: Explicitly configured Super Admin created successfully');
     } else {
-      console.log('ℹ️ SEED: Admin already exists, skipping...');
+      console.log('ℹ️ SEED: Explicitly configured admin already exists, skipping...');
     }
   } catch (err) {
     console.error('❌ SEED ERROR:', err);
