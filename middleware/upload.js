@@ -20,11 +20,11 @@ if (useCloudinary) {
 }
 
 const fileFilter = (req, file, cb) => {
-  const allowed = /jpeg|jpg|png|gif|webp|mp4|mp3|pdf/;
+  const allowed = /jpeg|jpg|png|gif|webp|mp4|mp3|pdf|docx?/i;
   const ext = allowed.test(path.extname(file.originalname).toLowerCase());
   const mime = allowed.test(file.mimetype);
   if (ext && mime) cb(null, true);
-  else cb(new Error("Only images, videos, audio and PDFs are allowed"));
+  else cb(new Error("Only images, videos, audio, PDFs, DOC and DOCX files are allowed"));
 };
 
 // Storage: memory when using Cloudinary (we stream the buffer up),

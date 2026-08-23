@@ -4,6 +4,14 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const Devotional = require('./models/Devotional');
+
+const publishDueDevotionals = async () => {
+  await Devotional.updateMany(
+    { status: 'scheduled', skipPublication: false, publishAt: { $lte: new Date() } },
+    { $set: { status: 'published' } },
+  );
+};
 
 const app = express();
 
@@ -52,6 +60,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/auth',      require('./routes/auth'));
 app.use('/api/sermons',   require('./routes/sermons'));
+app.use('/api/books',     require('./routes/books'));
+app.use('/api/devotionals', require('./routes/devotionals'));
+app.use('/api/radio-analytics', require('./routes/radioAnalytics'));
 app.use('/api/events',    require('./routes/events'));
 app.use('/api/posts',     require('./routes/posts'));
 app.use('/api/comments',  require('./routes/comments'));
@@ -74,8 +85,10 @@ app.get('/api/health', (req, res) => {
 
 // ── MongoDB connection ───────────────────────────────────────────────────────
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
+  .then(async () => {
     console.log('✅ MongoDB connected');
+    await publishDueDevotionals();
+    setInterval(() => publishDueDevotionals().catch((err) => console.error('Devotional scheduler error:', err.message)), 15 * 60 * 1000);
     app.listen(process.env.PORT || 5000, () => {
       console.log(`🚀 Server running on http://localhost:${process.env.PORT || 5000}`);
     });
