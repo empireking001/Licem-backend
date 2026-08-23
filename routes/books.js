@@ -22,6 +22,10 @@ router.post('/upload', protect, adminOnly, ...upload.single('file'), async (req,
     res.status(201).json({ resourceUrl: upload.getFileUrl(req.file), fileName: req.file.originalname, resourceType: req.file.originalname.toLowerCase().endsWith('.pdf') ? 'pdf' : 'doc' });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
+router.post('/cover-upload', protect, adminOnly, ...upload.single('cover'), async (req, res) => {
+  try { if (!req.file?.path) return res.status(400).json({ message: 'Cover image is required' }); res.status(201).json({ coverUrl: upload.getFileUrl(req.file), fileName: req.file.originalname }); }
+  catch (err) { res.status(500).json({ message: err.message }); }
+});
 router.put('/:id', protect, adminOnly, async (req, res) => {
   try { const book = await Book.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }); if (!book) return res.status(404).json({ message: 'Book not found' }); res.json(book); }
   catch (err) { res.status(400).json({ message: err.message }); }

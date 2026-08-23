@@ -8,6 +8,8 @@ const testimonySchema = new mongoose.Schema(
     category: { type: String, default: "General Testimony" },
     anonymous: { type: Boolean, default: false },
     approved: { type: Boolean, default: false },
+    consentConfirmed: { type: Boolean, default: false },
+    permissionNotes: { type: String, default: "" },
   },
   { timestamps: true },
 );

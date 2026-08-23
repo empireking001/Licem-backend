@@ -52,6 +52,8 @@ const settingsSchema = new mongoose.Schema(
     radioStreamUrl: { type: String, default: "" },
     radioName: { type: String, default: "LICEM Radio" },
     radioIsLive: { type: Boolean, default: false },
+    radioNowPlaying: { type: String, default: "" },
+    radioSchedule: { type: [{ title: String, type: String, start: String, duration: Number, enabled: Boolean }], default: [] },
     dailyVerseEnabled: { type: Boolean, default: true },
     dailyVerseText: { type: String, default: "" },
     dailyVerseReference: { type: String, default: "" },

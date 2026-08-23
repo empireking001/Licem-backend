@@ -15,6 +15,9 @@ const sermonSchema = new mongoose.Schema({
   likes:       { type: Number, default: 0 },
   likedBy:     [{ type: String }],
   tags:        [{ type: String }],
+  rightsConfirmed: { type: Boolean, default: false },
+  rightsHolder: { type: String, default: '' },
+  permissionNotes: { type: String, default: '' },
   createdBy:   { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
