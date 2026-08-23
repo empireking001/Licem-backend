@@ -59,6 +59,7 @@ const settingsSchema = new mongoose.Schema(
     dailyVerseReference: { type: String, default: "" },
     faceOfWeekName: { type: String, default: "" },
     faceOfWeekTitle: { type: String, default: "" },
+    faceOfWeekBio: { type: String, default: "" },
     faceOfWeekImage: { type: String, default: "" },
     faceOfWeekQuote: { type: String, default: "" },
   },
