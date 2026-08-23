@@ -75,6 +75,7 @@ app.use("/api/announcements", require("./routes/announcements"));
 app.use("/api/testimonies", require("./routes/testimonies"));
 app.use("/api/connect", require("./routes/connect"));
 app.use("/api/contact", require("./routes/contact"));
+app.use("/api/subscribers", require("./routes/subscribers"));
 app.use('/api/media',     require('./routes/media'));
 app.use("/api/birthdays", require("./routes/birthdays"));
 
