@@ -8,7 +8,7 @@ const prayerSchema = new mongoose.Schema(
     anonymous: { type: Boolean, default: false },
     prayerCount: { type: Number, default: 0 },
     prayedBy: [{ type: String }],
-    approved: { type: Boolean, default: true },
+    approved: { type: Boolean, default: false },
     answered: { type: Boolean, default: false },
   },
   { timestamps: true },

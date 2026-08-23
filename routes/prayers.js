@@ -1,21 +1,6 @@
 const router = require('express').Router();
-// const mongoose = require('mongoose');
-// const { protect, adminOnly } = require('../middleware/auth');
-const Prayer = require("../models/Prayer");
-const { protect, adminOnly } = require("../middleware/auth");
-
-// const prayerSchema = new mongoose.Schema({
-//   name:         { type: String, default: 'Anonymous' },
-//   request:      { type: String, required: true },
-//   category:     { type: String, default: 'General' },
-//   anonymous:    { type: Boolean, default: false },
-//   prayerCount:  { type: Number, default: 0 },
-//   prayedBy:     [{ type: String }],
-//   approved:     { type: Boolean, default: true },
-//   answered:     { type: Boolean, default: false },
-// }, { timestamps: true });
-
-// const Prayer = mongoose.model('Prayer', prayerSchema);
+const Prayer = require('../models/Prayer');
+const { protect, adminOnly } = require('../middleware/auth');
 
 router.get('/', async (req, res) => {
   try {
@@ -26,37 +11,50 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const prayer = await Prayer.create(req.body);
-    res.status(201).json(prayer);
+    const prayer = await Prayer.create({
+      name: req.body.anonymous ? 'Anonymous' : (req.body.name || 'Anonymous'),
+      request: req.body.request,
+      category: req.body.category || 'General',
+      anonymous: Boolean(req.body.anonymous),
+      approved: false,
+      answered: false,
+    });
+    res.status(201).json({ message: 'Prayer submitted for approval.', prayer });
   } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+router.get('/admin/all', protect, adminOnly, async (req, res) => {
+  try { res.json(await Prayer.find().sort({ approved: 1, createdAt: -1 })); }
+  catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 router.post('/:id/pray', async (req, res) => {
   try {
     const { visitorId } = req.body;
-    const prayer = await Prayer.findById(req.params.id);
+    const prayer = await Prayer.findOne({ _id: req.params.id, approved: true });
     if (!prayer) return res.status(404).json({ message: 'Not found' });
-    if (!prayer.prayedBy.includes(visitorId)) {
-      prayer.prayedBy.push(visitorId);
-      prayer.prayerCount += 1;
-      await prayer.save();
-    }
+    if (visitorId && !prayer.prayedBy.includes(visitorId)) { prayer.prayedBy.push(visitorId); prayer.prayerCount += 1; await prayer.save(); }
     res.json({ prayerCount: prayer.prayerCount });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-router.put('/:id/answered', protect, adminOnly, async (req, res) => {
+router.put('/:id/approval', protect, adminOnly, async (req, res) => {
   try {
-    const p = await Prayer.findByIdAndUpdate(req.params.id, { answered: true }, { new: true });
+    const approved = req.body.approved === true;
+    const p = await Prayer.findByIdAndUpdate(req.params.id, { approved }, { new: true });
+    if (!p) return res.status(404).json({ message: 'Prayer not found' });
     res.json(p);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+router.put('/:id/answered', protect, adminOnly, async (req, res) => {
+  try { res.json(await Prayer.findByIdAndUpdate(req.params.id, { answered: true }, { new: true })); }
+  catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 router.delete('/:id', protect, adminOnly, async (req, res) => {
-  try {
-    await Prayer.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Deleted' });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  try { await Prayer.findByIdAndDelete(req.params.id); res.json({ message: 'Deleted' }); }
+  catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 module.exports = router;
