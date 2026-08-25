@@ -78,6 +78,7 @@ app.use("/api/contact", require("./routes/contact"));
 app.use("/api/subscribers", require("./routes/subscribers"));
 app.use('/api/media',     require('./routes/media'));
 app.use("/api/birthdays", require("./routes/birthdays"));
+app.use("/api/team-members", require("./routes/teamMembers"));
 
 // ── Health check ────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
